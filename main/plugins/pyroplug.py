@@ -1,6 +1,6 @@
 #Github.com-Vasusen-code
 
-import asyncio, time, os
+import asyncio, time, os, re
 
 from .. import bot as Drone
 from main.plugins.progress import progress_for_pyrogram
@@ -9,6 +9,22 @@ from main.plugins.helpers import screenshot
 from pyrogram import Client, filters
 from pyrogram.errors import ChannelBanned, ChannelInvalid, ChannelPrivate, ChatIdInvalid, ChatInvalid, PeerIdInvalid
 from pyrogram.enums import MessageMediaType
+def safe_filename(msg):
+    os.makedirs("downloads", exist_ok=True)
+
+    ext = ".bin"
+
+    if msg.media == MessageMediaType.PHOTO:
+        ext = ".jpg"
+    elif msg.media in [MessageMediaType.VIDEO, MessageMediaType.VIDEO_NOTE]:
+        ext = ".mp4"
+    elif msg.document and msg.document.file_name:
+        original = msg.document.file_name
+        _, original_ext = os.path.splitext(original)
+        if original_ext:
+            ext = re.sub(r'[^a-zA-Z0-9.]', '', original_ext)
+
+    return os.path.join("downloads", f"telegram_{msg.id}{ext}")
 from ethon.pyfunc import video_metadata
 from ethon.telefunc import fast_upload
 from telethon.tl.types import DocumentAttributeVideo
@@ -56,6 +72,7 @@ async def get_msg(userbot, client, bot, sender, edit_id, msg_link, i):
             edit = await client.edit_message_text(sender, edit_id, "Trying to Download.")
             file = await userbot.download_media(
                 msg,
+                file_name=safe_filename(msg),
                 progress=progress_for_pyrogram,
                 progress_args=(
                     client,
